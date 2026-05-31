@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="NetworkHelper/NetworkHelper.csproj" />
+  <Project Path="Server/Server.csproj" />
+  <Project Path="Tcp2/Client.csproj" />
+</Solution>
