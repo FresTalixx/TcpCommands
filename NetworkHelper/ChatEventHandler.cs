@@ -236,6 +236,7 @@ public class ChatEventHandlerClient
             {
                 Console.WriteLine($"Polling error: {ex.Message}");
             }
+            
         }
     }
 
