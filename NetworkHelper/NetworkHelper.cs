@@ -1,8 +1,11 @@
 ﻿using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 
 public abstract class NetworkHelper
 {
+    
+
     public static async Task SendStringAsync(string text, NetworkStream stream)
     {
         // перетворюємо рядок у байти
@@ -184,6 +187,57 @@ public class User
 {
     public string Login { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
+
+
+    public static async Task<RegisterResult> RegisterUserAsync(User user, string filePath)
+    {
+        var users = await LoadUsersAsync(filePath);
+        var isExistingUser = users.Any(u => u.Login == user.Login);
+        var result = new RegisterResult();
+        if (isExistingUser)
+        {
+            result.IsRegistered = false;
+            result.Message = "User already exists.";
+            return result;
+        }
+        users.Add(user);
+
+        using var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write);
+        await JsonSerializer.SerializeAsync(fileStream, users);
+
+        result = new RegisterResult();
+        result.IsRegistered = true;
+        result.Message = "User registered successfully.";
+        return result;
+    }
+
+    public static async Task<AuthResult> AuthenticateUserAsync(User user, string filePath)
+    {
+        var users = await LoadUsersAsync(filePath);
+        var authenticatedUser = users.FirstOrDefault(u => u.Login == user.Login && u.Password == user.Password);
+        var result = new AuthResult
+        {
+            IsAuthenticated = authenticatedUser != null,
+            Message = authenticatedUser != null ? "Authentication successful." : "Invalid login or password."
+        };
+        return result;
+    }
+
+    public static async Task<List<User>> LoadUsersAsync(string filePath)
+    {
+        if (!File.Exists(filePath))
+        {
+            return new List<User>();
+        }
+        using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+        var users = await JsonSerializer.DeserializeAsync<List<User>>(fileStream);
+        if (users == null)
+        {
+            return new List<User>();
+        }
+        return users;
+    }
+
 }
 
 public class AuthResult
@@ -192,8 +246,24 @@ public class AuthResult
     public string Message { get; set; } = string.Empty;
 }
 
+public class RegisterResult
+{
+    public bool IsRegistered { get; set; }
+    public string Message { get; set; } = string.Empty;
+}
+
+
 public class FileReceiveResult {
     public bool IsSuccess { get; set; }
     public long FileSize { get; set; }
     public string FullPath { get; set; } = string.Empty;
+}
+
+public class Message
+{
+    public string Sender { get; set; } = string.Empty;
+    public string Recipient { get; set; } = string.Empty;
+    public string Text { get; set; } = string.Empty;
+    public DateTime SendingDate { get; set; }
+    public bool IsDelivered { get; set; } = false;
 }
